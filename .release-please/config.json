@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "separate-pull-requests": true,
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "mail_cloudflare",
+      "extra-files": ["mail_cloudflare/__manifest__.py"],
+      "exclude-paths": ["worker", ".release-please", ".github", "odoo"]
+    },
+    "worker": {
+      "release-type": "node",
+      "package-name": "@avunu/mail-cloudflare-worker",
+      "component": "mail-cloudflare-worker",
+      "include-component-in-tag": true,
+      "extra-files": ["src/version.ts"]
+    }
+  }
+}

@@ -1,0 +1,50 @@
+version: 2
+
+# Keeps every ecosystem in this repo up to date. Updates land on `main` automatically
+# (see .github/workflows/dependabot-auto-merge.yml); release-please remains the gate for
+# actually cutting a module/worker release. Dep bumps use the `chore` type so they never
+# force a release on their own — they ride along with the next real release.
+#
+# Deliberately NOT configured:
+#   • uv / pip for pyproject.toml — its install set and [tool.uv.sources] are generated from
+#     modules.txt by odoo-nix, and `odoo` is a path source; an updater would fight the
+#     generator. Re-lock with `odoo-update` in the dev shell.
+#   • gitsubmodule for odoo/ — OCB 18.0 moves daily; bump the pin deliberately (and re-lock)
+#     rather than on a schedule.
+updates:
+  # GitHub Actions used by the workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: chore
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # The worker package (worker/package.json + worker/package-lock.json). One group, so
+  # vitest and @cloudflare/vitest-pool-workers (which pins vitest's major through its
+  # peer range) always move together.
+  - package-ecosystem: npm
+    directory: /worker
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: chore
+    groups:
+      npm:
+        patterns: ["*"]
+
+  # Nix flake inputs (odoo-nix, and nixpkgs through its `follows`). Weekly and grouped, as
+  # odoo-nix itself does: nixpkgs tracks unstable, and separate PRs can land a lock where
+  # followed and following inputs disagree.
+  - package-ecosystem: nix
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      nix:
+        patterns: ["*"]

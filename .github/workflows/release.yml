@@ -1,0 +1,89 @@
+name: Release
+
+# Release Please maintains a release PR from Conventional Commits on main. The repo has two
+# independently-versioned packages:
+#   • "."      the Odoo module mail_cloudflare  → tag v{version}                        → attach a zip
+#   • "worker" @avunu/mail-cloudflare-worker    → tag mail-cloudflare-worker-v{version} → publish to
+#                                                                                        GitHub Packages
+# Root outputs are unprefixed; the worker's are `worker--*`.
+#
+# Which package owns a commit is decided purely by the paths it touches, never by the commit's
+# scope — `fix(worker):` is a convention, not a routing rule. The root package's path is "." so it
+# would otherwise own every file in the repo, and release-please bumps a patch for *any* commit it
+# owns. Hence `exclude-paths` in .release-please/config.json (worker, CI, the OCB submodule pointer),
+# and hence release-please's own config and manifest living in .release-please/ rather than at the
+# root: exclusion matches directory prefixes only, so a root-level file such as
+# .release-please-manifest.json could never be excluded and every worker release would drag the
+# module along with it.
+#
+# The module's version in __manifest__.py is "18.0." + the semver release-please manages; the two
+# halves sit on separate lines with an `x-release-please-version` marker on the semver one (see
+# the manifest for why the split shape is load-bearing).
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .release-please/config.json
+          manifest-file: .release-please/manifest.json
+
+      # Checkout once if ANY package released this run.
+      - uses: actions/checkout@v7
+        if: ${{ steps.release.outputs.releases_created }}
+
+      # --- Odoo module (root package): zip the addon + attach to its v{version} release -------
+      # Plain zip of the module directory (no Nix needed: an Odoo addon is source-only). Anyone
+      # not using the `addons` branch as a submodule can drop this into an addons path.
+      - name: Package the Odoo module
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          zip -r "mail_cloudflare-${{ steps.release.outputs.version }}.zip" mail_cloudflare \
+            -x '*/__pycache__/*' -x '*.pyc'
+
+      - name: Attach zip to release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ steps.release.outputs.tag_name }}" \
+            mail_cloudflare-*.zip --clobber
+
+      # --- Worker package: publish @avunu/mail-cloudflare-worker to GitHub Packages ----------
+      - name: Setup Node
+        if: ${{ steps.release.outputs['worker--release_created'] }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: "@avunu"
+
+      - name: Publish @avunu/mail-cloudflare-worker
+        if: ${{ steps.release.outputs['worker--release_created'] }}
+        working-directory: worker
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm ci
+          npm publish
+
+      # The worker ships via npm (GitHub Packages); its GitHub Release is informational. Keep the
+      # module's release as the repo's "Latest" so /releases/latest always carries the zip.
+      - name: Keep the worker release from becoming "Latest"
+        if: ${{ steps.release.outputs['worker--release_created'] }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ steps.release.outputs['worker--tag_name'] }}" --prerelease --latest=false

@@ -1,0 +1,129 @@
+name: Check
+
+# Quality gates on every push and pull request (so Dependabot PRs are gated before
+# auto-merge). Three jobs, each run only when something it actually inspects changed:
+#   • worker     — the worker package's OXC/TypeScript gate (oxfmt + oxlint + type-aware + tsc)
+#                  plus its vitest unit and workerd integration suites
+#   • ruff       — the Odoo module's lint/format gate via the flake's checks.ruff
+#   • odoo-tests — the Odoo module's test suite via the flake's checks.odoo-tests (a sandboxed
+#                  Postgres + OCB 18.0 install of mail_cloudflare)
+# The release build (release.yml) and the consumer-facing branch (addons-branch.yml) are separate.
+#
+# `worker` runs on a plain runner rather than through the flake: the TypeScript toolchain needs
+# node_modules, which a Nix sandbox has no way to populate. The Odoo side runs through Nix because
+# that is the only way to get a reproducible OCB + Python environment.
+#
+# Filtering happens per *job*, via a `changes` job the others depend on, rather than with
+# `on.push.paths` at the workflow level. That distinction matters: a workflow suppressed by a path
+# filter never reports a status at all, so the moment any of these becomes a required check, every
+# PR that does not touch that path waits forever for a status that will never arrive. A job skipped
+# by `if:` still reports, and GitHub counts it as satisfied.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      worker: ${{ steps.filter.outputs.worker }}
+      odoo: ${{ steps.filter.outputs.odoo }}
+    steps:
+      # Full history: on `push` the filter diffs against the previous commit, which a shallow
+      # clone would not have. Pull requests are resolved through the API and need neither.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # Each list is what that job reads, nothing more. This workflow appears in both so a
+          # change to CI still validates itself against everything it gates.
+          filters: |
+            worker:
+              - 'worker/**'
+              - '.github/workflows/check.yml'
+            odoo:
+              - 'mail_cloudflare/**'
+              - 'odoo'
+              - '.gitmodules'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'modules.txt'
+              - 'flake.nix'
+              - 'flake.lock'
+              - '.github/workflows/check.yml'
+
+  worker:
+    needs: changes
+    if: ${{ needs.changes.outputs.worker == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run check
+
+      - run: npm test
+
+  ruff:
+    needs: changes
+    if: ${{ needs.changes.outputs.odoo == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      # The flake declares `self.submodules = true`, so every Nix command needs the OCB
+      # submodule present: Nix resolves gitlinks from the working tree and errors on an
+      # empty one. Shallow is enough — only the tip is ever used.
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # Self-contained: ruff from nixpkgs over a source tree filtered down to the module.
+      # Builds under pure eval; never touches the Python environment.
+      - run: nix build .#checks.x86_64-linux.ruff -L
+
+  odoo-tests:
+    needs: changes
+    if: ${{ needs.changes.outputs.odoo == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # The check builds the uv2nix Python environment (Odoo's ~70 wheels plus the OCB wheel
+      # from the 2 GB submodule) before it can run a single test — 10–20 min cold. Cache the
+      # store between runs, keyed on everything that changes that closure. The cap keeps the
+      # cache below GitHub's per-repo budget; `purge` evicts stale keys so one run's store does
+      # not accumulate forever.
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'uv.lock', 'pyproject.toml', '.gitmodules') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 4G
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-
+          purge-created: 0
+          purge-primary-key: never
+
+      # Sandboxed Postgres (postgresqlTestHook) + `odoo-bin -i mail_cloudflare --test-enable`.
+      # The derivation fails on any ERROR/CRITICAL log line, on test failures, and when the
+      # module summary line is missing (a mistyped --test-tags otherwise passes silently).
+      - run: nix build .#checks.x86_64-linux.odoo-tests -L
