@@ -8,7 +8,10 @@ import type { MailWorkerEnv } from "../../src/env";
 
 declare global {
 	namespace Cloudflare {
-		interface Env extends MailWorkerEnv {}
+		interface Env extends MailWorkerEnv {
+			/** Test/fixtures/simple.eml, injected by vitest.integration.config.ts. */
+			FIXTURE_EML: string;
+		}
 
 		interface GlobalProps {
 			mainModule: typeof import("../../src/index");

@@ -29,6 +29,14 @@
 			}
 		},
 		{
+			// Tests read `(await stub.get(id)).status` all day long; forcing every one through a
+			// named intermediate makes assertions harder to read, not safer.
+			"files": ["test/**/*.ts"],
+			"rules": {
+				"unicorn/no-await-expression-member": "off"
+			}
+		},
+		{
 			// Constant-time comparison genuinely requires bitwise XOR/OR; that is the
 			// whole point of the routine (avoid short-circuit timing side-channels).
 			"files": ["src/lib/util.ts"],
