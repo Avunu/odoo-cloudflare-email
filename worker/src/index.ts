@@ -1,11 +1,19 @@
 /// <reference types="@cloudflare/workers-types" />
 import type { MailWorkerEnv } from "./env";
+import { handleEmail } from "./handlers/email";
+import { handleOps } from "./handlers/ops";
+import { json } from "./lib/http";
+import { logEvent } from "./lib/util";
 
 // Public package surface: the worker factory, the ready-made env-driven handler (default), the
 // Durable Object class (which the thin wrapper must re-export from its entry so wrangler can bind
-// it), and the env contract.
+// it), and the env/config/record contracts.
 export { InboxQueue } from "./inbox-do";
-export type { MailWorkerEnv } from "./env";
+export type { EnqueueInput, InboxRecord, InboxStatus, RetryResult } from "./inbox-do";
+export { ConfigError, loadConfig } from "./config";
+export type { AccessCredentials, WorkerConfig } from "./config";
+export type { MailWorkerEnv, MailWorkerVars } from "./env";
+export { VERSION } from "./version";
 
 export interface MailWorkerOptions {
 	/**
@@ -24,17 +32,25 @@ export interface MailWorkerOptions {
  * export default createWorker();
  * ```
  */
-export function createWorker(_options: MailWorkerOptions = {}): ExportedHandler<MailWorkerEnv> {
+export function createWorker(options: MailWorkerOptions = {}): ExportedHandler<MailWorkerEnv> {
+	const keyPrefix = options.keyPrefix ?? "inbox/";
 	return {
-		// TEMPORARY: the store-and-enqueue path (handlers/email.ts) lands in the next stage. Until
-		// then every message is bounced with a permanent error rather than accepted and dropped, so
-		// a premature deployment is loud instead of lossy.
-		email(message: ForwardableEmailMessage, _env: MailWorkerEnv, _ctx: ExecutionContext): void {
-			message.setReject("not implemented");
+		// Errors propagate on purpose: an unhandled error here makes Cloudflare answer the sending
+		// MTA with a temporary failure, so a message the worker could not store is retried by the
+		// sender rather than lost (handleEmail logs the cause before rethrowing).
+		async email(message: ForwardableEmailMessage, env: MailWorkerEnv, _ctx: ExecutionContext) {
+			await handleEmail(message, env, { keyPrefix });
 		},
-		// TEMPORARY: the ops API (handlers/ops.ts) lands in the next stage.
-		fetch(_request: Request, _env: MailWorkerEnv, _ctx: ExecutionContext): Response {
-			return new Response(null, { status: 404 });
+		async fetch(request: Request, env: MailWorkerEnv, _ctx: ExecutionContext): Promise<Response> {
+			try {
+				return await handleOps(request, env);
+			} catch (error) {
+				logEvent("error", "unhandled_error", {
+					path: new URL(request.url).pathname,
+					message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+				});
+				return json({ ok: false, error: "internal error" }, 500);
+			}
 		},
 	};
 }

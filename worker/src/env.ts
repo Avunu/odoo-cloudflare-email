@@ -2,19 +2,13 @@
 import type { InboxQueue } from "./inbox-do";
 
 /**
- * Bindings + configuration every deployment provides. Config values may arrive as committed `vars`
- * or as per-Worker secrets — the worker reads them identically through `env`, so this interface
- * only notes which ones must never be committed. Consumers (thin wrappers) supply these via their
- * `wrangler.jsonc` bindings/vars plus `wrangler secret` for the sensitive ones. Everything here is
- * the raw string form; parsing, defaults and validation live in config.ts.
+ * The configuration half of the env: every var and secret the worker reads, in the raw string form
+ * wrangler hands over. Config values may arrive as committed `vars` or as per-Worker secrets — the
+ * worker reads them identically through `env`, so this interface only notes which ones must never
+ * be committed. Parsing, defaults and validation live in config.ts, which accepts this interface on
+ * its own so the pure config logic can be tested without any binding present.
  */
-export interface MailWorkerEnv {
-	// --- Bindings ---
-	/** Raw inbound messages, one `inbox/<ulid>.eml` object each, written before any delivery attempt. */
-	INBOX: R2Bucket;
-	/** The delivery queue. A single instance, addressed as idFromName("inbox"). */
-	INBOX_QUEUE: DurableObjectNamespace<InboxQueue>;
-
+export interface MailWorkerVars {
 	// --- Odoo (secrets — the URL embeds the per-server key, so it is never logged) ---
 	/** `https://<odoo>/mail_cloudflare/inbound/<key>`, copied from the Incoming Mail Server form. */
 	ODOO_INBOUND_URL: string;
@@ -45,4 +39,15 @@ export interface MailWorkerEnv {
 	DELIVERY_TIMEOUT_SECONDS?: string;
 	/** Delay before the first attempt (default 0). Tests set it high so alarms only fire on demand. */
 	DELIVERY_DELAY_SECONDS?: string;
+}
+
+/**
+ * Bindings + configuration every deployment provides. Consumers (thin wrappers) supply these via
+ * their `wrangler.jsonc` bindings/vars plus `wrangler secret` for the sensitive ones.
+ */
+export interface MailWorkerEnv extends MailWorkerVars {
+	/** Raw inbound messages, one `inbox/<ulid>.eml` object each, written before any delivery attempt. */
+	INBOX: R2Bucket;
+	/** The delivery queue. A single instance, addressed as idFromName("inbox"). */
+	INBOX_QUEUE: DurableObjectNamespace<InboxQueue>;
 }
