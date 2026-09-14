@@ -29,15 +29,22 @@ export default defineConfig({
 						return new Response(`unexpected outbound request to ${request.url}`, { status: 502 });
 					}
 					const headers: Record<string, string> = {};
-					request.headers.forEach((v, k) => { headers[k] = v; });
+					request.headers.forEach((v, k) => {
+						headers[k] = v;
+					});
 					const body = new Uint8Array(await request.arrayBuffer());
 					const id = headers["x-mail-cloudflare-id"] ?? "";
 					captured.set(id, { headers, body });
 					const to = headers["x-mail-cloudflare-envelope-to"] ?? "";
 					const local = to.split("@")[0];
 					if (local === "fail500") return Response.json({ ok: false }, { status: 500 });
-					if (local === "reject422") return Response.json({ ok: false, error: "No possible route found" }, { status: 422 });
-					if (local === "redirect") return new Response(null, { status: 302, headers: { Location: "https://elsewhere.test/" } });
+					if (local === "reject422")
+						return Response.json({ ok: false, error: "No possible route found" }, { status: 422 });
+					if (local === "redirect")
+						return new Response(null, {
+							status: 302,
+							headers: { Location: "https://elsewhere.test/" },
+						});
 					return Response.json({ ok: true, thread_id: 42, id });
 				},
 			},

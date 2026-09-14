@@ -1,4 +1,9 @@
-import { env, createExecutionContext, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
+import {
+	env,
+	createExecutionContext,
+	runDurableObjectAlarm,
+	runInDurableObject,
+} from "cloudflare:test";
 import worker from "../../src/index";
 import { describe, it, expect } from "vitest";
 import { signBody } from "../../src/lib/sign";
@@ -17,7 +22,9 @@ function mockMessage(from: string, to: string, raw = RAW) {
 		headers: new Headers({ "Message-ID": "<x@example.com>" }),
 		rawSize: bytes.length,
 		raw: new Response(bytes).body!,
-		setReject(reason: string) { rejected = reason; },
+		setReject(reason: string) {
+			rejected = reason;
+		},
 		forward: () => Promise.reject(new Error("nope")),
 		reply: () => Promise.reject(new Error("nope")),
 		rejectedReason: () => rejected,
@@ -60,7 +67,11 @@ describe("scratch W2", () => {
 		const obj = await env.INBOX.get(row.r2Key);
 		expect(obj).not.toBeNull();
 		const text = await obj!.text();
-		expect(text.startsWith("Delivered-To: support@erp.example.com\r\nReturn-Path: <alice@example.com>\r\nMessage-ID:")).toBe(true);
+		expect(
+			text.startsWith(
+				"Delivered-To: support@erp.example.com\r\nReturn-Path: <alice@example.com>\r\nMessage-ID:",
+			),
+		).toBe(true);
 		expect(obj!.httpMetadata?.contentType).toBe("message/rfc822");
 		expect(obj!.customMetadata?.from).toBe("alice@example.com");
 		expect(obj!.customMetadata?.messageId).toBe("<x@example.com>");
@@ -81,7 +92,11 @@ describe("scratch W2", () => {
 		expect(h["x-mail-cloudflare-attempt"]).toBe("1");
 		expect(h["x-mail-cloudflare-envelope-from"]).toBe("alice@example.com");
 		const body = new Uint8Array(hit!.body);
-		const expected = await signBody("integration-test-secret", Number(h["x-mail-cloudflare-timestamp"]), body);
+		const expected = await signBody(
+			"integration-test-secret",
+			Number(h["x-mail-cloudflare-timestamp"]),
+			body,
+		);
 		expect(h["x-mail-cloudflare-signature"]).toBe(expected);
 		expect(new TextDecoder().decode(body)).toBe(text);
 		// Alarm cleared or set to the purge time
@@ -158,12 +173,20 @@ describe("scratch W2", () => {
 
 	it("ops api", async () => {
 		const auth = { Authorization: "Bearer integration-ops-token" };
-		const f = (path: string, init: RequestInit = {}) => worker.fetch!(new Request(`https://mail.test${path}`, init) as never, env, createExecutionContext());
+		const f = (path: string, init: RequestInit = {}) =>
+			worker.fetch!(
+				new Request(`https://mail.test${path}`, init) as never,
+				env,
+				createExecutionContext(),
+			);
 		expect((await f("/health")).status).toBe(200);
 		expect(await (await f("/health")).json()).toEqual({ ok: true });
 		expect((await f("/inbox")).status).toBe(401);
 		expect((await f("/inbox", { headers: { Authorization: "Bearer nope" } })).status).toBe(401);
-		const list = await (await f("/inbox?status=delivered&limit=2", { headers: auth })).json() as { ok: boolean; items: InboxRecord[] };
+		const list = (await (await f("/inbox?status=delivered&limit=2", { headers: auth })).json()) as {
+			ok: boolean;
+			items: InboxRecord[];
+		};
 		expect(list.ok).toBe(true);
 		expect(list.items.length).toBeLessThanOrEqual(2);
 		expect((await f("/inbox?status=bogus", { headers: auth })).status).toBe(400);
