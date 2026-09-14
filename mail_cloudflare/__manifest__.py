@@ -18,5 +18,8 @@
     "license": "AGPL-3",
     "installable": True,
     "depends": ["mail"],
-    "data": [],
+    "data": [
+        "views/ir_mail_server_views.xml",
+        "views/fetchmail_server_views.xml",
+    ],
 }
