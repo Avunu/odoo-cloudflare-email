@@ -113,7 +113,7 @@ jobs:
       # store between runs, keyed on everything that changes that closure. The cap keeps the
       # cache below GitHub's per-repo budget; `purge` evicts stale keys so one run's store does
       # not accumulate forever.
-      - uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'uv.lock', 'pyproject.toml', '.gitmodules') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
