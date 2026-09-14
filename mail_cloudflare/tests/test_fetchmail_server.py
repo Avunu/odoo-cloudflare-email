@@ -407,8 +407,24 @@ class TestFetchmailServer(CloudflareCommon):
             Server._cloudflare_prepare_message(body.decode(), " x@example.com ", None),
             b"Return-Path: <x@example.com>\r\n" + body,
         )
-        # header injection through the envelope is refused
-        for bad in ("y@example.com\r\nBcc: z@example.com", "y\n", "y\x00", "y\x7f"):
+        # the Worker percent-encodes non-ASCII (and "%") in the HTTP headers;
+        # the stored header carries the real address again
+        self.assertEqual(
+            Server._cloudflare_prepare_message(body, None, "jos%C3%A9@example.com"),
+            "Delivered-To: josé@example.com\r\n".encode() + body,
+        )
+        self.assertEqual(
+            Server._cloudflare_prepare_message(body, "100%25@example.com", None),
+            b"Return-Path: <100%@example.com>\r\n" + body,
+        )
+        # header injection through the envelope is refused, encoded or not
+        for bad in (
+            "y@example.com\r\nBcc: z@example.com",
+            "y@example.com%0D%0ABcc: z@example.com",
+            "y\n",
+            "y\x00",
+            "y\x7f",
+        ):
             with self.assertRaises(ValueError):
                 Server._cloudflare_prepare_message(body, "x@example.com", bad)
             with self.assertRaises(ValueError):

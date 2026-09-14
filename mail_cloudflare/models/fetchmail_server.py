@@ -20,7 +20,7 @@ import hmac
 import re
 import secrets
 import time
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from odoo import SUPERUSER_ID, _, api, fields, models
 from odoo.exceptions import UserError
@@ -385,11 +385,18 @@ Responses (JSON):
 
     @staticmethod
     def _cloudflare_check_envelope(name, value):
-        """``value`` stripped, or ``None`` when absent; raises ``ValueError``
-        on anything that could smuggle a second header line."""
+        """``value`` decoded and stripped, or ``None`` when absent; raises
+        ``ValueError`` on anything that could smuggle a second header line.
+
+        HTTP header values are ASCII, so the Worker percent-encodes anything
+        else in an envelope address (an SMTPUTF8 mailbox, or a literal ``%``)
+        exactly as ``encodeURIComponent`` would; ``unquote`` is its inverse
+        and leaves an ordinary address untouched. The control-character check
+        runs on the decoded value, so encoding is no way around it.
+        """
         if value is None:
             return None
-        value = str(value)
+        value = unquote(str(value))
         if _ENVELOPE_FORBIDDEN_RE.search(value):
             raise ValueError(f"Invalid {name} address: control characters")
         return value.strip()
