@@ -36,15 +36,15 @@ updates:
       npm:
         patterns: ["*"]
 
-  # Nix flake inputs (odoo-nix, and nixpkgs through its `follows`). Weekly and grouped, as
-  # odoo-nix itself does: nixpkgs tracks unstable, and separate PRs can land a lock where
-  # followed and following inputs disagree.
+  # Nix flake inputs. Only odoo-nix: nixpkgs (and everything else in the lock) `follows`
+  # odoo-nix's own inputs, so bumping odoo-nix pulls the set it was tested with, whereas a
+  # standalone nixpkgs bump diverges from it and rebuilds the whole Python environment for
+  # nothing. Weekly, as odoo-nix itself does.
   - package-ecosystem: nix
     directory: /
     schedule:
       interval: weekly
     commit-message:
       prefix: chore
-    groups:
-      nix:
-        patterns: ["*"]
+    allow:
+      - dependency-name: odoo-nix
