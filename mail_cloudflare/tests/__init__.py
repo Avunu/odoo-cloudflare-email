@@ -2,3 +2,5 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 
 from . import test_cloudflare_api
+from . import test_ir_mail_server
+from . import test_mail_mail
