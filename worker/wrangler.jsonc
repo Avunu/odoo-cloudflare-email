@@ -1,0 +1,32 @@
+{
+	// Generic, committed base config. Contains NO instance-specific values and NO secrets — real
+	// deployments live in the fleet repo, which supplies its own wrangler.jsonc per Worker with the
+	// bucket name and the Odoo inbound URL. This file exists for `wrangler dev`, `wrangler types`,
+	// and the integration tests; local values come from .dev.vars (see .dev.vars.example).
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "mail-cloudflare-worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-07-10",
+	// Deliberately no compatibility_flags: the worker uses Web APIs only (crypto.subtle, streams,
+	// AbortSignal.timeout), so a wrapper that forgets `nodejs_compat` cannot break it.
+	"observability": { "enabled": true, "head_sampling_rate": 1 },
+
+	// INBOX: every inbound message is written here as raw RFC 5322 bytes *before* anything is
+	// pushed to Odoo, so an Odoo outage (or a wrong secret) never loses mail — the queue only ever
+	// points at objects that already exist. The bucket name is per instance.
+	"r2_buckets": [{ "binding": "INBOX", "bucket_name": "mail-cloudflare-inbox" }],
+
+	// INBOX_QUEUE: a single instance (idFromName("inbox")) holding the delivery queue in SQLite and
+	// driving retries from its alarm. One instance is enough — delivery is serialised per Odoo
+	// instance anyway — and SQLite gives the atomic status transitions the retry logic needs.
+	"durable_objects": {
+		"bindings": [{ "name": "INBOX_QUEUE", "class_name": "InboxQueue" }],
+	},
+	// new_sqlite_classes (not new_classes): the DO uses ctx.storage.sql, which only SQLite-backed
+	// classes provide. Wrappers must declare this same tag and never edit it.
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["InboxQueue"] }],
+
+	// Non-secret tunables. Everything else (ODOO_INBOUND_URL, ODOO_WEBHOOK_SECRET, OPS_TOKEN,
+	// CF_ACCESS_CLIENT_*) is a per-deployment secret or var supplied by the wrapper.
+	"vars": { "RETENTION_DAYS": "30" },
+}

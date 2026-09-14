@@ -1,0 +1,113 @@
+[project]
+name = "odoo-cloudflare-email"
+version = "0.1.0"
+description = "Cloudflare email transport for Odoo 18 (odoo-nix consumer project)"
+requires-python = ">=3.11"
+readme = "README.md"
+
+# Install roots: OCB `odoo` + the modules from modules.txt as odoo-addon-<name>.
+# This block is auto-generated from modules.txt by `odoo-add-module` /
+# `odoo-add-bundle` / `odoo-update` (lib/oca_sources.py) — do not edit by hand.
+dependencies = [
+    # >>> odoo-nix: install set (managed from modules.txt) >>>
+    "odoo",
+    "odoo-addon-mail_cloudflare",
+    # <<< odoo-nix: install set <<<
+]
+
+[dependency-groups]
+# Development and test tooling. Resolved into the dev env only (python.nix
+# passes `workspace.deps.groups` to devPythonEnv and not to odooPythonEnv), so
+# none of this ships in a production image.
+#
+# Hand-edited on purpose: unlike [project].dependencies and [tool.uv.sources]
+# above, this block is not managed by oca_sources.py, so odoo-update leaves it
+# alone.
+#
+# No ruff here: it comes from nixpkgs via odoo-nix's extraDevPackages so the
+# flake check, the pre-push hook and the shell agree on one binary. No
+# watchdog either: with layout.customDir = "." the addons root is the repo
+# root, and an importable watcher would make --dev=all recurse over the OCB
+# checkout and worker/node_modules (dev.autoReload = false only stops
+# odoo-nix's own fallback injection).
+dev = [
+    "debugpy",
+    # The two test dependencies Odoo needs but does not declare. Both live in
+    # OCB's tests_require, which uv does not install, so nothing pulls them in.
+    #
+    # freezegun: odoo.tests.common imports it unconditionally -- without it no
+    # Odoo test runs at all, which at least fails loudly.
+    "freezegun",
+    # websocket-client: Odoo drives headless Chrome over the devtools protocol
+    # for HttpCase browser tours and imports `websocket` to do it. This one
+    # fails quietly -- a missing import makes Odoo *skip* every tour, and the
+    # summary line reports a skip exactly like a pass. See the odoo-test script.
+    "websocket-client",
+]
+
+[tool.uv]
+# Single virtual project; the modules load via addons_path, but each is declared
+# as an editable path source below so uv resolves the full dependency graph
+# (every module's external_dependencies.python + Odoo's own requirements).
+package = false
+
+# Editable path sources for OCB `odoo` + every local OCA/custom module. Modules
+# are modern whool packages whose metadata declares their deps; uv reads them.
+# Auto-generated (lib/oca_sources.py) — do not edit by hand.
+[tool.uv.sources]
+# >>> odoo-nix: module sources (managed) >>>
+    odoo = { path = "odoo" }
+    "odoo-addon-mail_cloudflare" = { path = "./mail_cloudflare", editable = true }
+# <<< odoo-nix: module sources <<<
+
+# The root is a virtual package with no Python code of its own.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = []
+
+# Legacy sdist-only deps (from Odoo's requirements) that don't declare setuptools
+# as a build dependency. Auto-maintained from uv.lock (lib/uv_build_deps.py).
+[tool.uv.extra-build-dependencies]
+# >>> odoo-nix: sdist build deps (managed) >>>
+"docopt" = ["setuptools"]
+"odoo" = ["setuptools"]
+"ofxparse" = ["setuptools"]
+"python-ldap" = ["setuptools"]
+"rjsmin" = ["setuptools"]
+"vobject" = ["setuptools"]
+# <<< odoo-nix: sdist build deps (managed) <<<
+
+# Mirrors OCA's 18.0 .ruff.toml (py311 for Odoo 18). Root-level excludes so
+# `ruff .` from the repo root never descends into the OCB checkout or the
+# worker.
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+extend-exclude = ["odoo", "worker"]
+
+[tool.ruff.lint]
+extend-select = [
+    "B",
+    "C90",
+    "E501",  # line too long (default 88)
+    "I",  # isort
+    "UP",  # pyupgrade
+]
+extend-safe-fixes = ["UP008"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "I001"]  # ignore unused and unsorted imports in __init__.py
+"__manifest__.py" = ["B018"]  # useless expression
+
+[tool.ruff.lint.isort]
+section-order = ["future", "standard-library", "third-party", "odoo", "odoo-addons", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+"odoo" = ["odoo"]
+"odoo-addons" = ["odoo.addons"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 16

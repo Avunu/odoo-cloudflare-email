@@ -1,0 +1,15 @@
+Message-ID: <simple-0001@example.com>
+Date: Mon, 14 Sep 2026 12:00:00 +0000
+From: Alice Example <alice@example.com>
+To: support@erp.example.com
+Subject: Hello from the fixture
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+Hi there,
+
+This is the simple fixture message used by the tests and the wrangler dev recipe.
+
+-- 
+Alice

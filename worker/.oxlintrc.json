@@ -1,0 +1,130 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	// All categories at error; "nursery" stays off (unstable rules). Every "off"
+	// below carries its justification. Mirrors the jx-platform / cloudflare-email
+	// baseline, adapted for a server-side Cloudflare Worker library (no React/DOM).
+	"categories": {
+		"correctness": "error",
+		"nursery": "off",
+		"pedantic": "error",
+		"perf": "error",
+		"restriction": "error",
+		"style": "error",
+		"suspicious": "error"
+	},
+	"ignorePatterns": ["dist", "node_modules", "**/*.map", "**/*.d.ts"],
+	"overrides": [
+		{
+			// The package entry's default export IS the public Worker handler (email + fetch).
+			"files": ["src/index.ts"],
+			"rules": {
+				"import/no-default-export": "off"
+			}
+		},
+		{
+			// Vitest config files must be a default export.
+			"files": ["vitest.config.ts", "vitest.integration.config.ts"],
+			"rules": {
+				"import/no-default-export": "off"
+			}
+		},
+		{
+			// Constant-time comparison genuinely requires bitwise XOR/OR; that is the
+			// whole point of the routine (avoid short-circuit timing side-channels).
+			"files": ["src/lib/util.ts"],
+			"rules": {
+				"no-bitwise": "off"
+			}
+		}
+	],
+	"plugins": ["import", "unicorn", "oxc", "typescript"],
+	"rules": {
+		// ─── Configured (enabled with options) ────────────────────────────────
+		// `== null` is the deliberate null-or-undefined check; all else strict.
+		"eqeqeq": ["error", "always", { "null": "ignore" }],
+		"eslint/no-empty": ["error", { "allowEmptyCatch": true }],
+		"eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
+		"eslint/no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+		"eslint/no-use-before-define": ["error", { "functions": false, "variables": false }],
+		// `void promise` is the explicit fire-and-forget marker.
+		"eslint/no-void": ["error", { "allowAsStatement": true }],
+		"max-classes-per-file": ["error", 2],
+		"new-cap": ["error", { "capIsNew": false }],
+		// Members are implicitly public; only private/protected must be explicit.
+		"typescript/explicit-member-accessibility": ["error", { "accessibility": "no-public" }],
+
+		// ─── Off: platform/domain conflicts ───────────────────────────────────
+		// null is a wire/storage value throughout (DO records, JSON responses).
+		"unicorn/no-null": "off",
+		"no-underscore-dangle": "off",
+
+		// ─── Off: actively harmful to this codebase ───────────────────────────
+		// Its autofix uppercases the first word of every *continuation* line of a
+		// wrapped prose comment, which is how a wrapped prose comment ends up asserting
+		// "the signing key is identical for every request / Of a given deployment".
+		// Comments here are wrapped sentences, not sentence-per-line.
+		"capitalized-comments": "off",
+		// Demands `const a = 1, b = 2` for every consecutive declaration in a scope.
+		// One binding per statement is the style of every file here, and merging
+		// them would obscure which values depend on which.
+		"one-var": "off",
+
+		// ─── Off: redundant with the TypeScript compiler ──────────────────────
+		// tsc strict owns undefined-identifier checking (lint has no type info).
+		"eslint/no-undef": "off",
+		// Inference-first; tsc strict validates every boundary.
+		"typescript/explicit-function-return-type": "off",
+		"typescript/explicit-module-boundary-types": "off",
+
+		// ─── Off: TypeScript idiom ────────────────────────────────────────────
+		"eslint/no-undefined": "off",
+
+		// ─── Off: contradicts an enabled rule or the formatter ────────────────
+		"eslint/no-eq-null": "off",
+		"import/prefer-default-export": "off",
+		"import/no-named-export": "off",
+		"no-duplicate-imports": "off",
+		"unicorn/number-literal-case": "off",
+
+		// ─── Off: deliberate architecture ─────────────────────────────────────
+		"no-await-in-loop": "off",
+		"eslint/require-await": "off",
+		"import/no-relative-parent-imports": "off",
+		"no-console": "off",
+		"unicorn/consistent-function-scoping": "off",
+		"unicorn/prefer-global-this": "off",
+
+		// ─── Off: style preferences that fight convention ─────────────────────
+		"func-style": "off",
+		"id-length": "off",
+		"complexity": "off",
+		"max-depth": "off",
+		"max-lines": "off",
+		"max-lines-per-function": "off",
+		"max-params": "off",
+		"max-statements": "off",
+		// Status codes, sizes, TTLs, and byte lengths read fine inline next to their use.
+		"no-magic-numbers": "off",
+		"no-continue": "off",
+		"no-inline-comments": "off",
+		"no-negated-condition": "off",
+		"unicorn/no-negated-condition": "off",
+		"no-nested-ternary": "off",
+		"unicorn/no-nested-ternary": "off",
+		"no-ternary": "off",
+		"init-declarations": "off",
+		"sort-keys": "off",
+		"sort-imports": "off",
+		"import/exports-last": "off",
+		"import/group-exports": "off",
+		"import/max-dependencies": "off",
+		"unicorn/import-style": "off",
+		"eslint/prefer-named-capture-group": "off",
+		"eslint/require-unicode-regexp": "off",
+
+		// ─── Off: ES-downlevel restrictions (irrelevant on modern targets) ─────
+		"oxc/no-async-await": "off",
+		"oxc/no-optional-chaining": "off",
+		"oxc/no-rest-spread-properties": "off"
+	}
+}

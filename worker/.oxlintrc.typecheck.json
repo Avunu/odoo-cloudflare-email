@@ -1,0 +1,27 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	// Type-aware lint pass (`npm run lint:typecheck`), kept separate from
+	// .oxlintrc.json: --type-aware activates every type-aware rule in enabled
+	// categories, so categories are all off here and we opt IN. test/integration is
+	// excluded because it uses the cloudflare:test module and is outside the tsc program.
+	"categories": {
+		"correctness": "off",
+		"nursery": "off",
+		"pedantic": "off",
+		"perf": "off",
+		"restriction": "off",
+		"style": "off",
+		"suspicious": "off"
+	},
+	"ignorePatterns": ["dist", "node_modules", "**/*.map", "**/*.d.ts", "test/integration"],
+	"plugins": ["typescript"],
+	"rules": {
+		"typescript/no-floating-promises": "error",
+		"typescript/await-thenable": "error",
+		"typescript/no-misused-promises": "error",
+		"typescript/no-unsafe-assignment": "error",
+		"typescript/no-unsafe-call": "error",
+		"typescript/no-unsafe-member-access": "error",
+		"typescript/no-unsafe-argument": "error"
+	}
+}

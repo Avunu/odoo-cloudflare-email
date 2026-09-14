@@ -1,0 +1,22 @@
+# Local-dev config bundle for `wrangler dev`. Copy to .dev.vars (gitignored) and fill in.
+# ODOO_INBOUND_URL is the "Webhook URL" shown on the Cloudflare-typed Incoming Mail Server in Odoo
+# (it embeds the per-server key); ODOO_WEBHOOK_SECRET is the secret shown beside it. The default
+# below targets the `devenv up` Odoo of this repo (port 8169).
+ODOO_INBOUND_URL="http://localhost:8169/mail_cloudflare/inbound/dev-server-key"
+ODOO_WEBHOOK_SECRET="replace-with-the-secret-odoo-generated"
+
+# Bearer token for the ops API (GET /inbox, POST /inbox/:id/retry, …). Leave unset and every ops
+# route answers 404.
+# OPS_TOKEN="dev-ops-token"
+
+# Cloudflare Access service token, for when /mail_cloudflare/inbound/* sits behind an Access
+# policy. Both or neither.
+# CF_ACCESS_CLIENT_ID=""
+# CF_ACCESS_CLIENT_SECRET=""
+
+# Tunables and their defaults. RETENTION_DAYS also ships as a var in wrangler.jsonc.
+# RETENTION_DAYS="30"                       # 0 = delete the R2 object as soon as Odoo accepts it
+# MAX_ATTEMPTS="32"                         # ≈ 7 days on the default schedule
+# BACKOFF_SECONDS="60,300,900,3600,21600"   # last value repeats
+# DELIVERY_TIMEOUT_SECONDS="30"             # max 60
+# DELIVERY_DELAY_SECONDS="0"                # tests set this high so alarms only fire on demand

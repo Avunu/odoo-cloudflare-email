@@ -1,0 +1,66 @@
+{
+	"name": "@avunu/mail-cloudflare-worker",
+	"version": "1.0.0",
+	"description": "Store-and-push Email Routing Worker for the Odoo mail_cloudflare module: keeps every inbound message in R2 and delivers it to Odoo over signed HTTPS with durable retries. Consumed by thin per-instance wrappers.",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Avunu/odoo-cloudflare-email.git",
+		"directory": "worker"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://npm.pkg.github.com"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit",
+		"typecheck:integration": "tsc -p test/integration/tsconfig.json --noEmit",
+		"lint": "oxlint .",
+		"lint:fix": "oxlint --fix .",
+		"lint:typecheck": "oxlint --type-aware -c .oxlintrc.typecheck.json .",
+		"format": "oxfmt .",
+		"format:check": "oxfmt --check .",
+		"check": "npm run format:check && npm run lint && npm run lint:typecheck && npm run typecheck && npm run typecheck:integration",
+		"dev": "wrangler dev",
+		"types": "wrangler types",
+		"test": "vitest run -c vitest.config.ts && vitest run -c vitest.integration.config.ts",
+		"test:unit": "vitest run -c vitest.config.ts",
+		"test:integration": "vitest run -c vitest.integration.config.ts",
+		"prepublishOnly": "npm run build",
+		"upgrade": "npx npm-check-updates -u && npm install && npm audit fix"
+	},
+	"dependencies": {
+		"zod": "4.5.4"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.22.0",
+		"@cloudflare/workers-types": "^5.20260908.1",
+		"oxfmt": "^0.67.0",
+		"oxlint": "^1.82.0",
+		"oxlint-tsgolint": "^7.0.2001",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.11",
+		"wrangler": "^4.130.0"
+	},
+	"peerDependencies": {
+		"@cloudflare/workers-types": "*"
+	},
+	"peerDependenciesMeta": {
+		"@cloudflare/workers-types": {
+			"optional": true
+		}
+	}
+}

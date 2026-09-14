@@ -1,0 +1,12 @@
+{
+	// Integration tests use the `cloudflare:test` module, which the root tsconfig deliberately
+	// excludes (it is only available under the Workers vitest pool, not the main `tsc` program).
+	// This nested config gives editors + `tsc -p` the vitest-pool-workers types so
+	// `cloudflare:test` resolves, and env.d.ts populates `Cloudflare.Env` with the worker bindings.
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types"]
+	},
+	"include": ["./**/*.ts"],
+	"exclude": []
+}
