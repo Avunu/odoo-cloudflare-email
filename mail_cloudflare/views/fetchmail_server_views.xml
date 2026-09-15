@@ -2,4 +2,85 @@
 <!-- Copyright 2026 Avunu LLC (avu.nu)
      License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html). -->
 <odoo>
+    <record id="view_email_server_form" model="ir.ui.view">
+        <field name="name">fetchmail.server.form (cloudflare)</field>
+        <field name="model">fetchmail.server</field>
+        <!-- Same priority as google_gmail's extension of this form: applied
+             after core's own inherited views. -->
+        <field name="priority">100</field>
+        <field name="inherit_id" ref="mail.view_email_server_form" />
+        <field name="arch" type="xml">
+            <!-- Nothing to fetch: the Worker pushes. -->
+            <button name="fetch_mail" position="attributes">
+                <attribute name="invisible">state != 'done' or server_type == 'cloudflare'</attribute>
+            </button>
+            <!-- No host, port or login: hide the IMAP/POP groups and stop
+                 requiring their fields, the way core does for 'local'. The
+                 groups have no name and 'string' is not allowed as a selector,
+                 so they are reached through the fields they hold. -->
+            <xpath expr="//field[@name='server']/parent::group" position="attributes">
+                <attribute name="invisible">server_type in ('local', 'cloudflare')</attribute>
+            </xpath>
+            <xpath expr="//field[@name='user']/parent::group" position="attributes">
+                <attribute name="invisible">server_type in ('local', 'cloudflare')</attribute>
+            </xpath>
+            <field name="server" position="attributes">
+                <attribute name="required">server_type not in ('local', 'cloudflare')</attribute>
+            </field>
+            <field name="user" position="attributes">
+                <attribute name="required">server_type not in ('local', 'cloudflare')</attribute>
+            </field>
+            <!-- The Worker contract (filled by onchange_server_type) reuses
+                 core's Configuration group; the mailgate script stays local
+                 only. -->
+            <xpath expr="//field[@name='configuration']/parent::group" position="attributes">
+                <attribute name="invisible">server_type not in ('local', 'cloudflare')</attribute>
+            </xpath>
+            <field name="script" position="attributes">
+                <attribute name="invisible">server_type != 'local'</attribute>
+            </field>
+            <xpath expr="//field[@name='configuration']/parent::group" position="before">
+                <group
+                    name="cloudflare"
+                    string="Cloudflare Email Worker"
+                    invisible="server_type != 'cloudflare'"
+                >
+                    <field
+                        name="cloudflare_webhook_url"
+                        widget="CopyClipboardChar"
+                        invisible="not cloudflare_webhook_url"
+                    />
+                    <field
+                        name="cloudflare_webhook_key"
+                        widget="CopyClipboardChar"
+                        invisible="not cloudflare_webhook_key"
+                    />
+                    <field
+                        name="cloudflare_webhook_secret"
+                        widget="CopyClipboardChar"
+                        groups="base.group_system"
+                        invisible="not cloudflare_webhook_secret"
+                    />
+                    <div colspan="2" invisible="not cloudflare_webhook_key">
+                        <button
+                            name="action_regenerate_cloudflare_webhook_secret"
+                            type="object"
+                            string="Regenerate Secret"
+                            icon="fa-refresh"
+                            class="btn-link px-0"
+                            groups="base.group_system"
+                            confirm="Requests signed with the current secret will be rejected until the Worker's ODOO_WEBHOOK_SECRET is updated. Continue?"
+                        />
+                    </div>
+                    <div
+                        class="text-muted"
+                        colspan="2"
+                        invisible="cloudflare_webhook_key"
+                    >
+                        Save the server to generate its webhook URL and secret.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
 </odoo>
