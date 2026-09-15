@@ -1,1 +1,12 @@
 # Changelog
+
+## [1.1.0](https://github.com/Avunu/odoo-cloudflare-email/compare/mail-cloudflare-worker-v1.0.0...mail-cloudflare-worker-v1.1.0) (2026-09-15)
+
+
+### Features
+
+* bidirectional Cloudflare email transport (mail_cloudflare + Email Worker) ([fcfa010](https://github.com/Avunu/odoo-cloudflare-email/commit/fcfa01061ac7d952ed3f1a5eb3959739828db36e))
+* implement worker scaffolding ([c0d50de](https://github.com/Avunu/odoo-cloudflare-email/commit/c0d50de111e947e56eb13b06c32d6adcaea2b4a4))
+* **worker:** signing, RFC 5322 envelope headers, backoff and utility primitives ([e99355a](https://github.com/Avunu/odoo-cloudflare-email/commit/e99355a4444111dc875eb69d0650ed27af0488cc))
+
+## Changelog
