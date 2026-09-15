@@ -35,6 +35,10 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+    ignore:
+      - dependency-name: vitest
+        versions: [">= 4"]
+
 
   # Nix flake inputs. Only odoo-nix: nixpkgs (and everything else in the lock) `follows`
   # odoo-nix's own inputs, so bumping odoo-nix pulls the set it was tested with, whereas a

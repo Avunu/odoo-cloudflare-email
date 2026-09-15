@@ -40,20 +40,20 @@
 		"test:unit": "vitest run -c vitest.config.ts",
 		"test:integration": "vitest run -c vitest.integration.config.ts",
 		"prepublishOnly": "npm run build",
-		"upgrade": "npx npm-check-updates -u && npm install && npm audit fix"
+		"upgrade": "npx npm-check-updates -u -x vitest && npm install && npm audit fix"
 	},
 	"dependencies": {
-		"zod": "4.6.2"
+		"zod": "4.6.5"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.22.0",
-		"@cloudflare/workers-types": "^5.20260908.1",
-		"oxfmt": "^0.67.0",
-		"oxlint": "^1.82.0",
+		"@cloudflare/workers-types": "^5.20260915.1",
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0",
 		"oxlint-tsgolint": "^7.0.2001",
 		"typescript": "^7.0.2",
-		"vitest": "^5.0.0",
-		"wrangler": "^4.130.0"
+		"vitest": "^4",
+		"wrangler": "^4.132.0"
 	},
 	"peerDependencies": {
 		"@cloudflare/workers-types": "*"
@@ -62,5 +62,10 @@
 		"@cloudflare/workers-types": {
 			"optional": true
 		}
+	},
+	"allowScripts": {
+		"esbuild@0.28.1": true,
+		"workerd@1.20260815.1": true,
+		"workerd@1.20260915.1": true
 	}
 }
