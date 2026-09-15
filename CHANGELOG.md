@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/Avunu/odoo-cloudflare-email/compare/v1.1.0...v1.2.0) (2026-09-15)
+
+
+### Features
+
+* take OCB from a flake input instead of a git submodule ([3b7aa09](https://github.com/Avunu/odoo-cloudflare-email/commit/3b7aa09bf8b36faaf5e055139e2e4dd4e45f08ea))
+* take OCB from a flake input instead of a git submodule ([0988b33](https://github.com/Avunu/odoo-cloudflare-email/commit/0988b3321acd846b209c6290284a6f86e9ceeed8))
+
 ## [1.1.0](https://github.com/Avunu/odoo-cloudflare-email/compare/v1.0.0...v1.1.0) (2026-09-15)
 
 

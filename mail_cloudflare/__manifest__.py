@@ -10,7 +10,7 @@
     # concatenation that fits on one line unless every part has one.
     "version": (
         "18.0."  # Odoo series
-        "1.1.0"  # x-release-please-version
+        "1.2.0"  # x-release-please-version
     ),
     "category": "Discuss",
     "author": "Avunu LLC",
