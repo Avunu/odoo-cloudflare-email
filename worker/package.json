@@ -1,6 +1,6 @@
 {
 	"name": "@avunu/mail-cloudflare-worker",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Store-and-push Email Routing Worker for the Odoo mail_cloudflare module: keeps every inbound message in R2 and delivers it to Odoo over signed HTTPS with durable retries. Consumed by thin per-instance wrappers.",
 	"license": "MIT",
 	"repository": {
