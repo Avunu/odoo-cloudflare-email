@@ -2,4 +2,80 @@
 <!-- Copyright 2026 Avunu LLC (avu.nu)
      License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html). -->
 <odoo>
+    <record id="ir_mail_server_form" model="ir.ui.view">
+        <field name="name">ir.mail_server.form (mail_cloudflare)</field>
+        <field name="model">ir.mail_server</field>
+        <field name="inherit_id" ref="base.ir_mail_server_form" />
+        <field name="arch" type="xml">
+            <!-- A Cloudflare server has no SMTP endpoint: relax the host/port
+                 requirement the way core does for the CLI configuration and
+                 hide the whole Connection page (encryption, host, port,
+                 credentials, certificates are all SMTP-only). -->
+            <field name="smtp_host" position="attributes">
+                <attribute
+                    name="required"
+                >smtp_authentication not in ('cli', 'cloudflare')</attribute>
+            </field>
+            <field name="smtp_port" position="attributes">
+                <attribute
+                    name="required"
+                >smtp_authentication not in ('cli', 'cloudflare')</attribute>
+            </field>
+            <xpath expr="//notebook" position="attributes">
+                <attribute
+                    name="invisible"
+                >smtp_authentication in ('cli', 'cloudflare')</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group
+                    name="cloudflare"
+                    string="Cloudflare Email Sending"
+                    invisible="smtp_authentication != 'cloudflare'"
+                >
+                    <group>
+                        <field
+                            name="cloudflare_account_id"
+                            required="smtp_authentication == 'cloudflare'"
+                            placeholder="e.g. 0123456789abcdef0123456789abcdef"
+                        />
+                        <field
+                            name="cloudflare_api_token"
+                            required="smtp_authentication == 'cloudflare'"
+                            password="True"
+                        />
+                    </group>
+                    <group>
+                        <div colspan="2" class="text-muted">
+                            <p>
+                                Create the token in the Cloudflare dashboard
+                                (My Profile → API Tokens) with the
+                                <b>Email Sending: Edit</b> permission on this
+                                account, and set the <b>FROM Filtering</b>
+                                above to a domain onboarded for Email Sending:
+                                Cloudflare only sends from onboarded domains.
+                            </p>
+                            <p>
+                                Messages are capped at 5 MB once encoded;
+                                record attachments above the limit are sent as
+                                download links instead.
+                            </p>
+                        </div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ir_mail_server_list" model="ir.ui.view">
+        <field name="name">ir.mail_server.list (mail_cloudflare)</field>
+        <field name="model">ir.mail_server</field>
+        <field name="inherit_id" ref="base.ir_mail_server_list" />
+        <field name="arch" type="xml">
+            <!-- The host column is empty for Cloudflare servers; show what
+                 transport each server uses instead. -->
+            <field name="name" position="after">
+                <field name="smtp_authentication" />
+            </field>
+        </field>
+    </record>
 </odoo>
