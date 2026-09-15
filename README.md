@@ -41,23 +41,23 @@ Setup, the webhook contract and the limitations are documented in each package's
 ```
 mail_cloudflare/   the Odoo addon — at the root so the repository itself is an addons path
 worker/            the Worker library (npm package, published to GitHub Packages)
-odoo/              OCB 18.0 (shallow git submodule) — only for local development and the
-                   test check; consumers never need it
+odoo/              gitignored symlink the dev shell keeps pointing at the `ocb` flake input
+                   (OCB 18.0) — only for local development and the test check; consumers
+                   never fetch it
 flake.nix          odoo-nix project: dev shell (Postgres + Odoo + Mailpit), nix checks
 pyproject.toml     Python manifest built by uv2nix; `uv.lock` is committed
 modules.txt        the module(s) `provision-db` installs
-.github/           CI (Check), releases (release-please), the `addons` mirror branch
+.github/           CI (Check), releases (release-please)
 ```
 
 ## Using the module in an odoo-nix project
 
-Track the **`addons` branch**, not `main`. `main` carries the OCB submodule for development;
-an odoo-nix consumer (`self.submodules = true`) mounting `main` would recurse into that gitlink
-and fetch a second copy of OCB. The `addons` branch is mirrored from `main` by CI and holds just
-the module:
+Mount the repository under `modules/` — the module sits at its root, so the repository is an
+addons path. There is no git submodule inside it (OCB comes from a flake input), so a consumer's
+`self.submodules = true` has nothing to recurse into:
 
 ```sh
-git submodule add -b addons https://github.com/Avunu/odoo-cloudflare-email.git modules/odoo-cloudflare-email
+git submodule add https://github.com/Avunu/odoo-cloudflare-email.git modules/odoo-cloudflare-email
 echo mail_cloudflare >> modules.txt
 odoo-update          # re-aggregates Python deps and re-locks
 provision-db         # or: odoo-bin -d <db> -i mail_cloudflare
@@ -77,6 +77,8 @@ provision-db                  # create the DB + install mail_cloudflare
 Ports are deliberately offset from odoo-nix's defaults so this project runs beside another
 odoo-nix checkout. The dev shell redirects **all** outgoing mail to Mailpit, including mail sent
 through a Cloudflare server (odoo-nix's `dev_mailcatch` intercepts non-SMTP sessions too).
+OCB is the `ocb` flake input (`odoo-nix.coreSource`), linked in as `./odoo` on shell entry;
+bump it with `nix flake update ocb`.
 
 Odoo module:
 
@@ -104,7 +106,7 @@ follow Conventional Commits; release-please turns them into releases.
 Two independent release streams, both driven by release-please from `main`:
 
 - `vX.Y.Z` — the Odoo module. The manifest version is `18.0.X.Y.Z`; a zip of the module is
-  attached to the GitHub release and the `addons` branch is updated.
+  attached to the GitHub release.
 - `mail-cloudflare-worker-vX.Y.Z` — the Worker, published to GitHub Packages as
   `@avunu/mail-cloudflare-worker`. Deployment happens from the private fleet repository, one
   Worker per Odoo instance.

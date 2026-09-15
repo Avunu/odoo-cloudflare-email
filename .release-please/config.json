@@ -7,15 +7,23 @@
     ".": {
       "release-type": "simple",
       "package-name": "mail_cloudflare",
-      "extra-files": ["mail_cloudflare/__manifest__.py"],
-      "exclude-paths": ["worker", ".release-please", ".github", "odoo"]
+      "extra-files": [
+        "mail_cloudflare/__manifest__.py"
+      ],
+      "exclude-paths": [
+        "worker",
+        ".release-please",
+        ".github"
+      ]
     },
     "worker": {
       "release-type": "node",
       "package-name": "@avunu/mail-cloudflare-worker",
       "component": "mail-cloudflare-worker",
       "include-component-in-tag": true,
-      "extra-files": ["src/version.ts"]
+      "extra-files": [
+        "src/version.ts"
+      ]
     }
   }
 }

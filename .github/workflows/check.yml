@@ -7,7 +7,7 @@ name: Check
 #   • ruff       — the Odoo module's lint/format gate via the flake's checks.ruff
 #   • odoo-tests — the Odoo module's test suite via the flake's checks.odoo-tests (a sandboxed
 #                  Postgres + OCB 18.0 install of mail_cloudflare)
-# The release build (release.yml) and the consumer-facing branch (addons-branch.yml) are separate.
+# The release build (release.yml) is separate.
 #
 # `worker` runs on a plain runner rather than through the flake: the TypeScript toolchain needs
 # node_modules, which a Nix sandbox has no way to populate. The Odoo side runs through Nix because
@@ -48,8 +48,6 @@ jobs:
               - '.github/workflows/check.yml'
             odoo:
               - 'mail_cloudflare/**'
-              - 'odoo'
-              - '.gitmodules'
               - 'pyproject.toml'
               - 'uv.lock'
               - 'modules.txt'
@@ -84,12 +82,7 @@ jobs:
     if: ${{ needs.changes.outputs.odoo == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      # The flake declares `self.submodules = true`, so every Nix command needs the OCB
-      # submodule present: Nix resolves gitlinks from the working tree and errors on an
-      # empty one. Shallow is enough — only the tip is ever used.
       - uses: actions/checkout@v7
-        with:
-          submodules: true
 
       - uses: DeterminateSystems/nix-installer-action@main
 
@@ -103,19 +96,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: true
 
       - uses: DeterminateSystems/nix-installer-action@main
 
       # The check builds the uv2nix Python environment (Odoo's ~70 wheels plus the OCB wheel
-      # from the 2 GB submodule) before it can run a single test — 10–20 min cold. Cache the
+      # from the `ocb` flake input) before it can run a single test — 10–20 min cold. Cache the
       # store between runs, keyed on everything that changes that closure. The cap keeps the
       # cache below GitHub's per-repo budget; `purge` evicts stale keys so one run's store does
       # not accumulate forever.
       - uses: nix-community/cache-nix-action@v7
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'uv.lock', 'pyproject.toml', '.gitmodules') }}
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'uv.lock', 'pyproject.toml') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 4G
           purge: true
