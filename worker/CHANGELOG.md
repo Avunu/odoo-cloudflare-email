@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Avunu/odoo-cloudflare-email/compare/mail-cloudflare-worker-v1.1.0...mail-cloudflare-worker-v1.1.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **worker:** retain vitest 4 ([e7db7fa](https://github.com/Avunu/odoo-cloudflare-email/commit/e7db7fa0998a0369a488266bd68b689e3c12d8ed))
+
 ## [1.1.0](https://github.com/Avunu/odoo-cloudflare-email/compare/mail-cloudflare-worker-v1.0.0...mail-cloudflare-worker-v1.1.0) (2026-09-15)
 
 
