@@ -2,12 +2,16 @@
   description = "Cloudflare email transport for Odoo 18 — mail_cloudflare addon + Email Worker";
 
   inputs = {
-    # odoo/ (OCB) is a git submodule; expose its contents to the flake source
-    # tree so odoo-nix can derive addons_path from it and checks.odoo-tests can
-    # run odoo-bin straight out of the store copy.
-    self.submodules = true;
     odoo-nix.url = "github:Avunu/odoo-nix";
     nixpkgs.follows = "odoo-nix/nixpkgs";
+    # OCB 18.0 as a plain source input rather than a git submodule: the dev
+    # shell and checks.odoo-tests run it from the store (odoo-nix links it in
+    # as ./odoo), and a project that mounts this repository under modules/
+    # never fetches it. Bump with `nix flake update ocb`.
+    ocb = {
+      url = "github:OCA/OCB/18.0";
+      flake = false;
+    };
   };
 
   nixConfig = {
@@ -20,7 +24,7 @@
   outputs =
     { self, odoo-nix, ... }@inputs:
     odoo-nix.lib.mkFlake { inherit inputs; } (
-      { ... }:
+      { inputs, ... }:
       {
         imports = [ odoo-nix.flakeModules.default ];
 
@@ -44,8 +48,9 @@
             # = "."), so the module lives at ./mail_cloudflare and consumers can
             # mount the repo itself under modules/. Everything that lints or
             # hooks over the source must therefore be handed a *filtered* tree:
-            # odoo/ is a 2 GB OCB checkout and worker/ is TypeScript with its
-            # own toolchain, and neither belongs in a ruff or git-hooks sandbox.
+            # worker/ is TypeScript with its own toolchain and does not belong
+            # in a ruff or git-hooks sandbox (odoo/ is the gitignored symlink to
+            # the OCB input and never enters the source; listed for safety).
             moduleSrc = lib.cleanSourceWith {
               name = "odoo-cloudflare-email-src";
               src = self;
@@ -63,11 +68,11 @@
             # Same synthesis odoo-nix uses for odoo.conf, re-rooted on the store
             # copy of the flake for the sandboxed test run (no dev_mailcatch:
             # the suite mocks the transport and never opens a real connection).
-            # The layout is read back from the option set below so the two can
-            # never drift apart.
+            # The layout and core source are read back from the option set
+            # below so the two can never drift apart.
             addons = odoo-nix.lib.addons {
               inherit lib;
-              inherit (config.odoo-nix) layout;
+              inherit (config.odoo-nix) layout coreSource;
               workspaceRoot = ./.;
             };
 
@@ -78,6 +83,7 @@
               enable = true;
               projectName = "odoo-cloudflare-email";
               workspaceRoot = ./.;
+              coreSource = inputs.ocb;
               odooSeries = "18.0";
               python = pkgs.python311;
 
@@ -85,8 +91,8 @@
               # and oca_sources.py picks up ./mail_cloudflare as the editable uv
               # source. Side effect: packages.builtOdoo (which copies customDir
               # into an assembled tree) is meaningless for this repo — the
-              # module ships via the `addons` branch / consumer submodules, not
-              # as a deployable Odoo tree. Never build or deploy it from here.
+              # module ships as a consumer submodule, not as a deployable Odoo
+              # tree. Never build or deploy it from here.
               layout.customDir = ".";
 
               odooConf = {
@@ -181,10 +187,10 @@
                 # --test-enable even with --stop-after-init).
                 odoo-tests = pkgs.stdenvNoCC.mkDerivation {
                   name = "odoo-cloudflare-email-odoo-tests";
-                  # No src/unpack: odoo-bin runs straight from the flake's store
-                  # copy (2 GB with OCB — copying it into the build dir would
-                  # dominate the run). Python skips __pycache__ writes on the
-                  # read-only store silently.
+                  # No src/unpack: odoo-bin runs straight from the OCB input
+                  # and the module from the flake's store copy (copying either
+                  # into the build dir would dominate the run). Python skips
+                  # __pycache__ writes on the read-only store silently.
                   dontUnpack = true;
                   dontConfigure = true;
                   dontBuild = true;
@@ -203,7 +209,7 @@
                     runHook preCheck
                     export HOME="$TMPDIR"
                     set -o pipefail
-                    python ${self}/odoo/odoo-bin \
+                    python ${inputs.ocb}/odoo-bin \
                       -d "$PGDATABASE" --db_host="$PGHOST" --db_user="$PGUSER" \
                       --addons-path="${addons.addonsPathFor "${self}"}" \
                       --data-dir="$TMPDIR/odoo-data" --http-port=18069 \

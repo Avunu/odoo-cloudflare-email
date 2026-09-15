@@ -10,7 +10,7 @@ name: Release
 # Which package owns a commit is decided purely by the paths it touches, never by the commit's
 # scope — `fix(worker):` is a convention, not a routing rule. The root package's path is "." so it
 # would otherwise own every file in the repo, and release-please bumps a patch for *any* commit it
-# owns. Hence `exclude-paths` in .release-please/config.json (worker, CI, the OCB submodule pointer),
+# owns. Hence `exclude-paths` in .release-please/config.json (worker, CI, release-please itself),
 # and hence release-please's own config and manifest living in .release-please/ rather than at the
 # root: exclusion matches directory prefixes only, so a root-level file such as
 # .release-please-manifest.json could never be excluded and every worker release would drag the
@@ -47,7 +47,7 @@ jobs:
 
       # --- Odoo module (root package): zip the addon + attach to its v{version} release -------
       # Plain zip of the module directory (no Nix needed: an Odoo addon is source-only). Anyone
-      # not using the `addons` branch as a submodule can drop this into an addons path.
+      # not mounting the repository as a submodule can drop this into an addons path.
       - name: Package the Odoo module
         if: ${{ steps.release.outputs.release_created }}
         run: |

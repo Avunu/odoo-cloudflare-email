@@ -343,6 +343,23 @@
         "type": "github"
       }
     },
+    "ocb": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789252228,
+        "narHash": "sha256-LjxBi6CxxQHhXqz4KOHlFRv747hv2LG5JaOTOzmdGtw=",
+        "owner": "OCA",
+        "repo": "OCB",
+        "rev": "24086d5a8d3bd0c7c69d24172608992248d143ed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "OCA",
+        "ref": "18.0",
+        "repo": "OCB",
+        "type": "github"
+      }
+    },
     "odoo-nix": {
       "inputs": {
         "devenv": "devenv",
@@ -354,11 +371,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1789408973,
-        "narHash": "sha256-RZsLlyQ7M/YNxJGvluJ46ug+6rFClDXs/+dCaM5om4s=",
+        "lastModified": 1789502820,
+        "narHash": "sha256-Tt810CyPk4zNst67rmSLxUmjdBeiEM/fKfWsK0RdoaM=",
         "owner": "Avunu",
         "repo": "odoo-nix",
-        "rev": "2f9f6760d1c8b74c79c07c7c65ed6a678923073d",
+        "rev": "3ef951936bace89def3236702876847679f465d1",
         "type": "github"
       },
       "original": {
@@ -423,6 +440,7 @@
           "odoo-nix",
           "nixpkgs"
         ],
+        "ocb": "ocb",
         "odoo-nix": "odoo-nix"
       }
     },

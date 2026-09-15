@@ -3,6 +3,8 @@
 # Store symlinks recreated on shell entry. No trailing slash: git records a
 # symlink as a file, so a "dir/" pattern would not match them.
 /odoo.conf
+# OCB, linked in from the `ocb` flake input by the dev shell
+/odoo
 /.venv
 # devenv's files API links the generated git-hooks config here on shell entry.
 /.pre-commit-config.yaml
